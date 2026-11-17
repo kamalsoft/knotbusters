@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>Knot Busters</title>
+<link rel="stylesheet" href="styles.css">
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+</head>
+<body>
+<div id="hud">
+  <button id="menuBtn">Levels</button>
+  <div id="title">Level <span id="lvl">1</span></div>
+  <div id="coins">🪙 <span id="coinCount">0</span></div>
+</div>
+<div id="boosters">
+  <button data-booster="undo">Undo</button>
+  <button data-booster="hint">Hint</button>
+  <button data-booster="cut">Scissors</button>
+  <button data-booster="socket">Socket</button>
+  <button id="muteBtn">Sound</button>
+</div>
+<div id="toast"></div>
+<div id="menu" class="hidden">
+  <div class="panel">
+    <h2>Levels</h2>
+    <div id="levelGrid"></div>
+    <button id="closeMenu">Close</button>
+  </div>
+</div>
+<div id="win" class="hidden">
+  <div class="panel">
+    <h2>Untangled!</h2>
+    <p id="winText"></p>
+    <button id="nextBtn">Next level</button>
+  </div>
+</div>
+<script type="module" src="src/main.js"></script>
+</body>
+</html>
