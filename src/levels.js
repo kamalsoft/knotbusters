@@ -15,12 +15,15 @@ export function mulberry32(seed) {
   };
 }
 
-export function levelParams(L) {
+export const DIFFICULTY = ['easy', 'normal', 'hard'];
+const DIFF_SCRAMBLE = [0.6, 1, 1.5];
+
+export function levelParams(L, diff = 1) {
   return {
-    ropes: Math.min(8, 2 + Math.floor((L - 1) / 4)),
-    slack: 0.12 + Math.min(0.1, L * 0.002),
+    ropes: Math.min(8, Math.max(2, 2 + Math.floor((L - 1) / 4) + (diff - 1))),
+    slack: 0.12 + Math.min(0.1, L * 0.002) + (1 - diff) * 0.04,
     spare: 2,
-    scramble: Math.min(12, 2 + Math.floor(L / 2)),
+    scramble: Math.min(12, Math.round((2 + Math.floor(L / 2)) * DIFF_SCRAMBLE[diff])),
     fixed: L >= 4 ? 1 : 0,
     hub: L >= 7,
     lock: L >= 10,
@@ -47,17 +50,17 @@ function nonCrossingMatching(n, rnd) {
   return pairs;
 }
 
-export function generateLevel(L) {
+export function generateLevel(L, diff = 1) {
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
-    const spec = buildCandidate(L, attempt);
+    const spec = buildCandidate(L, attempt, diff);
     if (verifyLevel(spec)) return spec;
   }
   throw new Error(`level ${L}: no verified layout in ${MAX_ATTEMPTS} attempts`);
 }
 
-export function buildCandidate(L, attempt) {
-  const rnd = mulberry32(L * 7919 + attempt * 104729 + 17);
-  const P = levelParams(L);
+export function buildCandidate(L, attempt, diff = 1) {
+  const rnd = mulberry32(L * 7919 + attempt * 104729 + diff * 1000003 + 17);
+  const P = levelParams(L, diff);
   const S = 2 * P.ropes + P.spare;
   const radius = Math.max(3, S * 0.42);
   const sockets = [];
@@ -99,7 +102,7 @@ export function buildCandidate(L, attempt) {
       id: `r${k}`,
       a: `p${a}`,
       b: `p${b}`,
-      len: Math.hypot(A.x - B.x, A.z - B.z) * (1 + P.slack),
+      len: Math.max(Math.hypot(A.x - B.x, A.z - B.z) * (1 + P.slack), radius * 2),
       color: PALETTE[k % PALETTE.length],
     };
   });
@@ -121,7 +124,7 @@ export function buildCandidate(L, attempt) {
 
   const scrambleMoves = [];
   const game = new Game(spec, { settle: false });
-  const cap = P.scramble * 3;
+  const cap = 60;
   for (let k = 0; k < cap; k++) {
     if (k >= P.scramble && chordsCross(game)) break;
     const cands = [...game.pins.values()].filter((p) => !p.fixed);

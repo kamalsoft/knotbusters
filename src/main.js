@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { generateLevel, Game, PALETTE } from './levels.js';
+import { generateLevel, Game, PALETTE, DIFFICULTY } from './levels.js';
 import { ROPE_R } from './physics.js';
 import { Sfx } from './audio.js';
 import * as ui from './ui.js';
@@ -70,10 +70,11 @@ let drag = null;
 let cutMode = false;
 let hintTimer = 0;
 let frozen = false;
+let started = false;
 let lastT = performance.now();
 
 function load() {
-  const base = { level: 1, maxUnlocked: 1, coins: 30, cd: {} };
+  const base = { level: 1, maxUnlocked: 1, coins: 30, cd: {}, diff: 1 };
   try {
     return { ...base, ...JSON.parse(localStorage.getItem(SAVE) || '{}') };
   } catch (e) {
@@ -83,7 +84,7 @@ function load() {
 
 function persist() {
   try {
-    localStorage.setItem(SAVE, JSON.stringify({ level, maxUnlocked: save.maxUnlocked, coins: save.coins, cd: save.cd }));
+    localStorage.setItem(SAVE, JSON.stringify({ level, maxUnlocked: save.maxUnlocked, coins: save.coins, cd: save.cd, diff: save.diff }));
   } catch (e) {
     ui.toast('Progress could not be saved');
   }
@@ -149,7 +150,8 @@ function syncPins() {
 
 function startLevel(n) {
   level = n;
-  game = new Game(generateLevel(n));
+  game = new Game(generateLevel(n, save.diff), { settle: false });
+  started = false;
   buildBoard();
   rebuildRopes();
   ui.setLevel(n);
@@ -222,6 +224,7 @@ renderer.domElement.addEventListener('pointerdown', (ev) => {
     const obj = pickAt(ev, [...ropeMeshes.values()]);
     cutMode = false;
     if (obj && game.cut(obj.userData.rope)) {
+      started = true;
       sfx.friction();
       rebuildRopes();
       checkWin();
@@ -260,6 +263,7 @@ renderer.domElement.addEventListener('pointerup', () => {
   ringGroup.clear();
   const opened = game.locks.filter((l) => l.unlocked).length;
   if (target >= 0 && game.movePin(id, target)) {
+    started = true;
     sfx.clack();
     buildBoard();
     rebuildRopes();
@@ -345,7 +349,12 @@ document.getElementById('muteBtn').onclick = (e) => {
 };
 
 document.getElementById('menuBtn').onclick = () => {
-  ui.showLevelMenu(save.maxUnlocked, (n) => startLevel(n));
+  const pick = (diff) => {
+    save.diff = diff;
+    persist();
+    ui.showLevelMenu(save.maxUnlocked, save.diff, DIFFICULTY.map((d) => d[0].toUpperCase() + d.slice(1)), (n) => { document.getElementById('menu').classList.add('hidden'); startLevel(n); }, pick);
+  };
+  pick(save.diff);
 };
 
 addEventListener('resize', () => {
@@ -358,7 +367,7 @@ function frame(t) {
   const dt = (t - lastT) / 1000;
   lastT = t;
   if (game) {
-    game.world.advance(dt);
+    if (started) game.world.advance(dt);
     syncPins();
     rebuildRopes();
     if (!frozen && game.world.ropes.size && game.isWon()) checkWin();

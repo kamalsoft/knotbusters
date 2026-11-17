@@ -41,3 +41,6 @@ button:disabled { opacity: 0.4; cursor: default; }
 #levelGrid button { background: var(--accent); }
 #levelGrid button.locked { background: var(--muted); }
 @media (max-width: 480px) { #title { font-size: 16px; } button { padding: 9px 11px; } }
+#diffRow { display: flex; gap: 8px; justify-content: center; }
+#diffRow button { background: var(--muted); }
+#diffRow button.on { background: var(--accent); }

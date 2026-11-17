@@ -53,7 +53,7 @@ test('physics stability: 1000 ticks of extreme in-reach pin displacement', () =>
 test('solvability: levels 1-50 start tangled and the recorded solution untangles them', () => {
   for (let L = 1; L <= 50; L++) {
     const spec = generateLevel(L);
-    const g = new Game(spec);
+    const g = new Game(spec, { settle: false });
     assert.equal(g.isTangled(), true, `level ${L} initial state should be tangled`);
     for (const mv of spec.solution) assert.equal(g.movePin(mv.pin, mv.to), true, `level ${L} move ${JSON.stringify(mv)} rejected`);
     g.world.settle(1200);
@@ -61,9 +61,22 @@ test('solvability: levels 1-50 start tangled and the recorded solution untangles
   }
 });
 
+test('difficulty tiers: easy and hard levels 1-5 also verify and untangle', () => {
+  for (const diff of [0, 2]) {
+    for (let L = 1; L <= 5; L++) {
+      const spec = generateLevel(L, diff);
+      const g = new Game(spec, { settle: false });
+      assert.equal(g.isTangled(), true, `diff  level  initial`);
+      for (const mv of spec.solution) assert.equal(g.movePin(mv.pin, mv.to), true);
+      g.world.settle(1200);
+      assert.equal(g.isTangled(), false, `diff  level  solved`);
+    }
+  }
+});
+
 test('fixed pin is immovable', () => {
   const spec = generateLevel(4);
-  const g = new Game(spec);
+  const g = new Game(spec, { settle: false });
   const fixed = [...g.pins.values()].find((p) => p.fixed);
   assert.ok(fixed, 'level 4 has a fixed pin');
   const target = g.sockets.findIndex((_, i) => !g.occupied(i) && !g.sockets[i].lock);
@@ -77,7 +90,7 @@ test('octopus hub moves all attached strands together', () => {
   for (const r of spec.ropes) for (const p of [r.a, r.b]) count.set(p, (count.get(p) || 0) + 1);
   const hub = [...count].find(([, n]) => n >= 2);
   assert.ok(hub, 'level 7 has a hub');
-  const g = new Game(spec);
+  const g = new Game(spec, { settle: false });
   const free = g.sockets.findIndex((_, i) => !g.occupied(i) && !g.sockets[i].lock && g.reachOK(hub[0], i));
   assert.ok(free >= 0, 'a reachable free socket exists');
   assert.equal(g.movePin(hub[0], free), true);
@@ -92,7 +105,7 @@ test('octopus hub moves all attached strands together', () => {
 
 test('key-lock unlocks when the key rope is free', () => {
   const spec = generateLevel(10);
-  const g = new Game(spec);
+  const g = new Game(spec, { settle: false });
   assert.equal(g.locks[0].unlocked, g.world.isFree('r0'));
   for (const mv of spec.solution) g.movePin(mv.pin, mv.to);
   assert.equal(g.isWon(), true);
@@ -101,7 +114,7 @@ test('key-lock unlocks when the key rope is free', () => {
 
 test('undo restores socket, anchor geometry and tangle state', () => {
   const spec = generateLevel(3);
-  const g = new Game(spec);
+  const g = new Game(spec, { settle: false });
   const before = { socket: new Map([...g.pins.values()].map((p) => [p.id, p.socket])), tangled: g.isTangled(), pos: g.world.snapshot() };
   const mv = spec.solution[0];
   assert.equal(g.movePin(mv.pin, mv.to), true);
@@ -128,7 +141,7 @@ test('cutting a rope recalculates the win state', () => {
 
 test('hint returns a legal move that the solution would make', () => {
   const spec = generateLevel(6);
-  const g = new Game(spec);
+  const g = new Game(spec, { settle: false });
   const mv = g.hint();
   assert.ok(mv, 'hint available');
   assert.equal(g.canMove(mv.pin, mv.to), true);

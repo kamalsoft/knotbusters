@@ -24,7 +24,16 @@ export function boosterLabel(name, cdLeft) {
   btn.disabled = cdLeft > 0;
 }
 
-export function showLevelMenu(maxUnlocked, onPick) {
+export function showLevelMenu(maxUnlocked, diff, names, onPick, onDiff) {
+  const row = $('diffRow');
+  row.innerHTML = '';
+  names.forEach((name, i) => {
+    const b = document.createElement('button');
+    b.textContent = name;
+    if (i === diff) b.classList.add('on');
+    b.onclick = () => onDiff(i);
+    row.appendChild(b);
+  });
   const grid = $('levelGrid');
   grid.innerHTML = '';
   const top = Math.max(maxUnlocked, 20);
